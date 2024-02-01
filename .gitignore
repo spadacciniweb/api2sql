@@ -1,0 +1,5 @@
+etc/*
+!etc/*_sample
+*_bak
+*.bak
+*.swp

@@ -1,0 +1,15 @@
+[global]
+dev = 1
+debug = 1
+
+[master_db]
+host = localhost
+port = 3306
+user = user
+pass = pwd
+name = dbname
+
+[mongo_db]
+host = localhost
+port = 27017
+name = collect_name
