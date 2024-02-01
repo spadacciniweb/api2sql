@@ -45,7 +45,11 @@ get '/token' => sub {
 };
 
 post '/token' => sub {
-    my $token = int(rand(1_000_000_000));
+    my $token = ( query_parameters->get('id') and
+                  query_parameters->get('id') =~ /^\d+$/ 
+                )
+        ? query_parameters->get('id')
+        : int(rand(1_000_000_000));
 
     if (tokens_rs->search_rs({
           id => $token
