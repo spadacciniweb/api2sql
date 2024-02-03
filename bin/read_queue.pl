@@ -4,12 +4,17 @@ use strict;
 use warnings;
 
 use MongoDB;
+use BSON::Types ':all';
+use Cache::Memcached;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Data::Dumper;
 use Api2sql;
-use Api2sql::Common qw( logs_rs logsMongo_rs );
-use BSON::Types ':all';
+use Api2sql::Common qw(
+    logs_rs
+    logsMongo_rs
+    getMemcachedDump
+);
+use Data::Dumper;
 
 Api2sql->load_config("$FindBin::Bin/.." . "/etc/api2sql.conf");
 
@@ -37,3 +42,7 @@ printf "### DB NoSQL ###\n";
 printf "logs count: %s\n", logsMongo_rs->estimated_document_count;
 printf "last log:\n\tuser_agent: %s\n\tmethod: %s\n\tip: %s\n\tts: %s %s\n",
     $log_mongo->{user_agent}, $log_mongo->{method}, $log_mongo->{ip}, $dt->ymd, $dt->hms;
+
+printf "\n\n";
+printf "### Memcached ###\n";
+printf "estimated tokens: %s\n", scalar keys %{getMemcachedDump() };

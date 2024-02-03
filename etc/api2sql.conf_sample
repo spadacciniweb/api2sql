@@ -13,3 +13,6 @@ name = dbname
 host = localhost
 port = 27017
 name = collect_name
+
+[memcached]
+servers = 127.0.0.1:11211,127.0.0.2:11211

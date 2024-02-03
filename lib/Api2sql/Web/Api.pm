@@ -5,6 +5,7 @@ use Dancer2 appname => 'Api2sql';
 use strict;
 use warnings;
 use Api2sql::Common qw(
+    incrMemcached
     jsonRepl
     logDB
 
@@ -51,6 +52,7 @@ post '/token' => sub {
         ? query_parameters->get('id')
         : int(rand(1_000_000_000));
 
+    incrMemcached($token);
     if (tokens_rs->search_rs({
           id => $token
         })->count

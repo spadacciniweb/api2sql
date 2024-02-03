@@ -2,6 +2,7 @@ package Api2sql::Common;
 
 use strict;
 use warnings;
+use Cache::Memcached;
 use JSON;
 use MongoDB;
 use DateTime;
@@ -12,6 +13,8 @@ no if ($] >= 5.018), 'warnings' => 'experimental';
 
 use base qw(Exporter);
 our @EXPORT_OK = qw(
+    getMemcachedDump
+    incrMemcached
     jsonRepl
     logDB
 
@@ -22,6 +25,7 @@ our @EXPORT_OK = qw(
 
 my $Master;
 my $MasterMongo;
+my $Memcached;
 
 sub master () {
     $Master ||= Api2sql::Schema::Master->connect;
@@ -36,10 +40,55 @@ sub masterMongo () {
     return $MasterMongo;
 }
 
+sub memcached () {
+    $Memcached ||= new Cache::Memcached {
+        servers => [ split ',', $Api2sql::Config->{memcached}->{servers} ],
+        debug   => 0,
+    };
+    return $Memcached;
+}
+
 sub tokens_rs { return master->resultset('Token') }
 sub logs_rs { return master->resultset('Log') }
 
 sub logsMongo_rs { return masterMongo->get_collection( 'log' ) }
+
+sub getMemcachedDump {
+    my $hGetSlabs = memcached->stats( ['slabs'] );
+    my @id_slabs = ();
+    foreach (split /\n/, $hGetSlabs->{hosts}->{'127.0.0.1:11211'}->{slabs}) {
+        my ($stats, undef) = split /:/;
+        push @id_slabs, $1
+            if $stats =~ /^STAT (\d+)/ and
+               not($1 ~~ @id_slabs);
+    }
+    my @keys = ();
+    foreach my $id_slabs (@id_slabs) {
+        my $cmd_cachedump = sprintf 'cachedump %s 0', $id_slabs;
+        my $hGetSlab = memcached->stats( [$cmd_cachedump] );
+        foreach (split /\n/, $hGetSlab->{hosts}->{'127.0.0.1:11211'}->{$cmd_cachedump} ) {
+            push @keys, $1
+                if $_ =~ /^ITEM (.+) \[/;
+        }
+    }
+    my $hKey = memcached->get_multi(@keys);
+
+    return $hKey;
+}
+
+sub incrMemcached {
+    my $token = shift;
+
+    my $val = memcached->get($token);
+
+    if ($val) {
+        $Memcached->incr($token);
+    } else {
+        $Memcached->set($token, 1);
+    }
+
+    return undef;  
+}
 
 sub jsonRepl {
     return $Api2sql::Config->{global}->{dev}
