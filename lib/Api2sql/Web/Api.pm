@@ -53,11 +53,12 @@ post '/token' => sub {
         : int(rand(1_000_000_000));
 
     incrMemcached($token);
-    if (tokens_rs->search_rs({
-          id => $token
-        })->count
+    my $token_rs = tokens_rs->search_rs({
+        id => $token
+    });
+    if ($token_rs->count
     ) {
-        tokens_rs->update({
+        $token_rs->update({
             valore => \'valore+1'
         });
         return jsonRepl({ code => 200,
