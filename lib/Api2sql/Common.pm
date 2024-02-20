@@ -4,10 +4,10 @@ use strict;
 use warnings;
 use Cache::Memcached;
 use JSON;
+use DBI;
 use MongoDB;
 use DateTime;
 use Try::Tiny;
-use Data::Dumper;
 use Hash::Merge::Simple qw/ merge /;
 no if ($] >= 5.018), 'warnings' => 'experimental';
 
@@ -24,37 +24,70 @@ our @EXPORT_OK = qw(
 );
 
 my $Master;
-my $MasterMongo;
-my $Memcached;
+my $dbhMongo;
+my $dbhMemcached;
+my $dbhSQLite;
 
 sub master () {
     $Master ||= Api2sql::Schema::Master->connect;
     return $Master;
 }
 
-sub masterMongo () {
-    $MasterMongo ||= MongoDB::MongoClient->new( 
+sub dbhMongo () {
+    $dbhMongo ||= MongoDB::MongoClient->new( 
         host => $Api2sql::Config->{mongo_db}->{host},
         port => $Api2sql::Config->{mongo_db}->{port},
     )->get_database( $Api2sql::Config->{mongo_db}->{name} );
-    return $MasterMongo;
+    return $dbhMongo;
 }
 
-sub memcached () {
-    $Memcached ||= new Cache::Memcached {
+sub dbhMemcached () {
+    $dbhMemcached ||= new Cache::Memcached {
         servers => [ split ',', $Api2sql::Config->{memcached}->{servers} ],
         debug   => 0,
     };
-    return $Memcached;
+    return $dbhMemcached;
+}
+
+sub dbhSQLite () {
+    unless ($dbhSQLite) {
+        $dbhSQLite = DBI->connect(
+            sprintf "dbi:SQLite:dbname=%s", $Api2sql::Config->{sqlite}->{db}
+        ) or die $DBI::errstr;
+        if ($Api2sql::Config->{sqlite}->{fast}) {
+            $dbhSQLite->do("PRAGMA synchronous = OFF");
+            $dbhSQLite->do("PRAGMA cache_size = 1000000");
+            $dbhSQLite->do("PRAGMA journal_mode = OFF");
+            $dbhSQLite->do("PRAGMA locking_mode = EXCLUSIVE");
+            $dbhSQLite->do("PRAGMA temp_store = MEMORY");
+        }
+        buildSQLite($dbhSQLite);
+    }
+    return $dbhSQLite;
+}
+
+sub buildSQLite () {
+    my $dbhSQLite = shift;
+    my $stmt = qq(CREATE TABLE IF NOT EXISTS logs (
+                   id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                   ip         VARCHAR(255),
+                   user_agent VARCHAR(255),
+                   method     VARCHAR(7),
+                   path       VARCHAR(255),
+                   dump       TEXT,
+                   ts         DATETIME
+               ); 
+            );
+    my $rv = $dbhSQLite->do($stmt);
 }
 
 sub tokens_rs { return master->resultset('Token') }
 sub logs_rs { return master->resultset('Log') }
 
-sub logsMongo_rs { return masterMongo->get_collection( 'log' ) }
+sub logsMongo_rs { return dbhMongo->get_collection( 'log' ) }
 
 sub getMemcachedDump {
-    my $hGetSlabs = memcached->stats( ['slabs'] );
+    my $hGetSlabs = dbhMemcached->stats( ['slabs'] );
     my @id_slabs = ();
     foreach (split /\n/, $hGetSlabs->{hosts}->{'127.0.0.1:11211'}->{slabs}) {
         my ($stats, undef) = split /:/;
@@ -65,13 +98,13 @@ sub getMemcachedDump {
     my @keys = ();
     foreach my $id_slabs (@id_slabs) {
         my $cmd_cachedump = sprintf 'cachedump %s 0', $id_slabs;
-        my $hGetSlab = memcached->stats( [$cmd_cachedump] );
+        my $hGetSlab = dbhMemcached->stats( [$cmd_cachedump] );
         foreach (split /\n/, $hGetSlab->{hosts}->{'127.0.0.1:11211'}->{$cmd_cachedump} ) {
             push @keys, $1
                 if $_ =~ /^ITEM (.+) \[/;
         }
     }
-    my $hKey = memcached->get_multi(@keys);
+    my $hKey = dbhMemcached->get_multi(@keys);
 
     return $hKey;
 }
@@ -79,12 +112,12 @@ sub getMemcachedDump {
 sub incrMemcached {
     my $token = shift;
 
-    my $val = memcached->get($token);
+    my $val = dbhMemcached->get($token);
 
     if ($val) {
-        $Memcached->incr($token);
+        $dbhMemcached->incr($token);
     } else {
-        $Memcached->set($token, 1);
+        $dbhMemcached->set($token, 1);
     }
 
     return undef;  
@@ -110,8 +143,23 @@ sub logDB {
 
         logsMongo_rs->insert_one( merge \%log,
                                         { "ts" => DateTime->now }
-                                );
+                                )
+            if $Api2sql::Config->{mongo}->{enabled};
+        logSQLITE(\%log)
+            if $Api2sql::Config->{sqlite}->{enabled};
     }
+    return undef;
+}
+
+sub logSQLITE {
+    my $log = shift;
+    my $sth = dbhSQLite->prepare(q{
+        INSERT INTO logs (ip, user_agent, method, path, dump, ts) VALUES (?, ?, ?, ?, ?, DateTime('now'))
+    });
+    $sth->execute($log->{ip}, $log->{user_agent}, $log->{method},
+                  $log->{path}, $log->{dump}
+                 );
+
     return undef;
 }
 
