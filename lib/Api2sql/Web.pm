@@ -19,7 +19,7 @@ any qr{(.+)} => sub {
     pass;
 };
 
-get '/404' => sub {
+any '/404' => sub {
     return jsonRepl({ code => 404,
                       repl => 'Not found... please go away'
                     });
