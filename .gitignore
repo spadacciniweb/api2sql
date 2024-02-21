@@ -3,3 +3,4 @@ etc/*
 *_bak
 *.bak
 *.swp
+*.db
