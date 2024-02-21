@@ -51,8 +51,6 @@ sub dbhMemcached () {
 
 sub dbhSQLite () {
     unless ($dbhSQLite) {
-use Data::Dumper;
-    warn Dumper($Api2sql::home, $Api2sql::Config->{sqlite}->{db});
         $dbhSQLite = DBI->connect(
             sprintf "dbi:SQLite:dbname=%s",
                 (join '/', $Api2sql::home, $Api2sql::Config->{sqlite}->{db})
