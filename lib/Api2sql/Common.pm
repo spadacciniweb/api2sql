@@ -51,14 +51,17 @@ sub dbhMemcached () {
 
 sub dbhSQLite () {
     unless ($dbhSQLite) {
+use Data::Dumper;
+    warn Dumper($Api2sql::home, $Api2sql::Config->{sqlite}->{db});
         $dbhSQLite = DBI->connect(
-            sprintf "dbi:SQLite:dbname=%s", $Api2sql::Config->{sqlite}->{db}
+            sprintf "dbi:SQLite:dbname=%s",
+                (join '/', $Api2sql::home, $Api2sql::Config->{sqlite}->{db})
         ) or die $DBI::errstr;
         if ($Api2sql::Config->{sqlite}->{fast}) {
             $dbhSQLite->do("PRAGMA synchronous = OFF");
             $dbhSQLite->do("PRAGMA cache_size = 1000000");
             $dbhSQLite->do("PRAGMA journal_mode = OFF");
-            $dbhSQLite->do("PRAGMA locking_mode = EXCLUSIVE");
+            #$dbhSQLite->do("PRAGMA locking_mode = EXCLUSIVE");
             $dbhSQLite->do("PRAGMA temp_store = MEMORY");
         }
         buildSQLite($dbhSQLite);
