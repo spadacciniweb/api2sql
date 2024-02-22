@@ -19,14 +19,14 @@ any qr{(.+)} => sub {
     pass;
 };
 
-any '/404' => sub {
+get '/404' => sub {
     return jsonRepl({ code => 404,
                       repl => 'Not found... please go away'
                     });
 };
 
 any qr{.*} => sub {
-    forward '/404';
+    redirect '/404';
 };
 
 true;
