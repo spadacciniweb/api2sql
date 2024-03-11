@@ -145,7 +145,7 @@ sub logDB {
         logsMongo_rs->insert_one( merge \%log,
                                         { "ts" => DateTime->now }
                                 )
-            if $Api2sql::Config->{mongo}->{enabled};
+            if $Api2sql::Config->{mongo_db}->{enabled};
         logSQLITE(\%log)
             if $Api2sql::Config->{sqlite}->{enabled};
     }
