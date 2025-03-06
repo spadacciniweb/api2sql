@@ -1,0 +1,40 @@
+> ab -n 10000 -c 2 -m POST 'localhost:5000/api/token?id=4'
+...
+Finished 10000 requests
+
+
+Server Software:        HTTP::Server::PSGI
+Server Hostname:        localhost
+Server Port:            5000
+
+Document Path:          /api/token?id=4
+Document Length:        56 bytes
+
+Concurrency Level:      2
+Time taken for tests:   190.230 seconds
+Complete requests:      10000
+Failed requests:        0
+Total transferred:      2280000 bytes
+HTML transferred:       560000 bytes
+Requests per second:    52.57 [#/sec] (mean)
+Time per request:       38.046 [ms] (mean)
+Time per request:       19.023 [ms] (mean, across all concurrent requests)
+Transfer rate:          11.70 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       1
+Processing:    16   38  14.2     33     334
+Waiting:       16   38  14.2     33     334
+Total:         16   38  14.2     34     334
+
+Percentage of the requests served within a certain time (ms)
+  50%     34
+  66%     35
+  75%     37
+  80%     40
+  90%     54
+  95%     58
+  98%     65
+  99%     72
+ 100%    334 (longest request)

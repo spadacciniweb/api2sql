@@ -1,0 +1,42 @@
+> hey -n 100 -q 2 -c 2 -m POST 'localhost:5000/api/token?id=4'
+
+Summary:
+  Total:	25.1020 secs
+  Slowest:	0.1442 secs
+  Fastest:	0.0876 secs
+  Average:	0.1075 secs
+  Requests/sec:	3.9838
+  
+
+Response time histogram:
+  0.088 [1]	|■
+  0.093 [6]	|■■■■■■■■
+  0.099 [15]	|■■■■■■■■■■■■■■■■■■■■■
+  0.105 [29]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.110 [16]	|■■■■■■■■■■■■■■■■■■■■■■
+  0.116 [12]	|■■■■■■■■■■■■■■■■■
+  0.122 [8]	|■■■■■■■■■■■
+  0.127 [4]	|■■■■■■
+  0.133 [5]	|■■■■■■■
+  0.139 [2]	|■■■
+  0.144 [2]	|■■■
+
+
+Latency distribution:
+  10% in 0.0952 secs
+  25% in 0.0994 secs
+  50% in 0.1046 secs
+  75% in 0.1149 secs
+  90% in 0.1264 secs
+  95% in 0.1322 secs
+  99% in 0.1442 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.0406 secs, 0.0876 secs, 0.1442 secs
+  DNS-lookup:	0.0003 secs, 0.0001 secs, 0.0012 secs
+  req write:	0.0001 secs, 0.0000 secs, 0.0003 secs
+  resp wait:	0.0664 secs, 0.0500 secs, 0.0914 secs
+  resp read:	0.0003 secs, 0.0001 secs, 0.0010 secs
+
+Status code distribution:
+  [200]	100 responses

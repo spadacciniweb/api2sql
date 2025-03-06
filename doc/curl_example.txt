@@ -1,0 +1,32 @@
+> curl -X GET localhost:5000/api/token
+Repl ->
+    {
+       "repl" : [
+          {
+             "valore" : 11,
+             "id" : 995640834
+          },
+          {
+             "id" : 636384055,
+             "valore" : 6
+          },
+          {
+             "id" : 141342530,
+             "valore" : 1
+          }
+       ],
+       "code" : 200
+    }
+
+> curl -X POST localhost:5000/api/token
+Repl ->
+    {
+       "code" : 200,
+       "repl" : "Token 813694580 creato"
+    }
+
+> curl -X POST localhost:5000/api/token?id=4
+{
+   "code" : 200,
+   "repl" : "Token 4 incrementato"
+}
